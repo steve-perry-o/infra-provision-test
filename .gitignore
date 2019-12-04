@@ -1,0 +1,10 @@
+# Terraform files
+.terraform
+terraform.tfstate
+terraform.tfvars
+infra/*.tfstate*
+infra/.terraform/
+
+provisioning/chef/
+
+*.pem

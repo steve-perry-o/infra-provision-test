@@ -1,0 +1,9 @@
+postgresql_databases:
+  - name: tenpo_production
+postgresql_users:
+  - name: tenpo_user
+    password: tenpotenpo
+postgresql_user: postgres
+postgresql_group: postgres
+postgresql_locales:
+  - 'en_US.UTF-8'

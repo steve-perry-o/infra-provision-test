@@ -1,0 +1,19 @@
+- hosts: webservers
+  tasks:
+    - name: Install basic packages
+      become: true
+      apt:
+        pkg:
+          - python-pip
+        state: present
+        update_cache: yes
+    - pip:
+        name: docker-py
+    - name: Create a Hello World container
+      docker_container:
+        name: hello-world
+        image: hello-world
+    - name: Create a Busybox container
+      docker_container:
+        name: busybox
+        image: busybox
