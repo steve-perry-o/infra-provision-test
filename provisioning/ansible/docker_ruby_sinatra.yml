@@ -9,11 +9,11 @@
         update_cache: yes
     - pip:
         name: docker-py
-    - name: Create a Hello World container
+    - name: Create a Ruby Sinatra API container
       docker_container:
-        name: hello-world
-        image: hello-world
-    - name: Create a Busybox container
-      docker_container:
-        name: busybox
-        image: busybox
+        name: hello-api
+        image: franklinyu/sinatra-hello
+        ports:
+          - 80:9292
+        volumes:
+          - /tmp/config.ru:/srv/config.ru

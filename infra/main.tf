@@ -83,7 +83,7 @@ resource "azurerm_network_security_group" "tenpoapisg" {
   name                = "tenpoAPISecurityGroup"
   location            = var.location
   resource_group_name = azurerm_resource_group.tenporesourcegroup.name
-    
+
   security_rule {
     name                       = "SSH"
     priority                   = 1001
@@ -107,7 +107,7 @@ resource "azurerm_network_security_group" "tenpoapisg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
-    
+
   tags = var.tags
 }
 
@@ -125,7 +125,7 @@ resource "azurerm_network_interface" "tenpoapinic" {
     private_ip_address_allocation           = "Dynamic"
     load_balancer_backend_address_pools_ids = [azurerm_lb_backend_address_pool.tenpobackendap.id]
   }
-  
+
   tags = var.tags
 }
 
@@ -166,6 +166,7 @@ resource "azurerm_virtual_machine" "tenpoapivm" {
     }
   }
 
+  depends_on = [azurerm_network_interface.tenpoapinic]
   tags = var.tags
 }
 
@@ -176,7 +177,7 @@ resource "azurerm_network_security_group" "tenpodbsg" {
   name                = "tenpoDBSecurityGroup"
   location            = var.location
   resource_group_name = azurerm_resource_group.tenporesourcegroup.name
-    
+
   security_rule {
     name                       = "SSH"
     priority                   = 1001
@@ -200,7 +201,7 @@ resource "azurerm_network_security_group" "tenpodbsg" {
     source_address_prefix      = "VirtualNetwork"
     destination_address_prefix = "*"
   }
-    
+
   tags = var.tags
 }
 
@@ -217,7 +218,7 @@ resource "azurerm_network_interface" "tenpodbnic" {
     subnet_id                     = azurerm_subnet.tenposubnet.id
     private_ip_address_allocation = "Dynamic"
   }
-  
+
   tags = var.tags
 }
 
@@ -256,6 +257,7 @@ resource "azurerm_virtual_machine" "tenpodbvm" {
     }
   }
 
+  depends_on = [azurerm_network_interface.tenpodbnic]
   tags = var.tags
 }
 
@@ -266,7 +268,7 @@ resource "azurerm_network_security_group" "tenpobastionsg" {
   name                = "tenpoBastionSecurityGroup"
   location            = var.location
   resource_group_name = azurerm_resource_group.tenporesourcegroup.name
-    
+
   security_rule {
     name                       = "SSH"
     priority                   = 1001
@@ -278,7 +280,7 @@ resource "azurerm_network_security_group" "tenpobastionsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
-    
+
   tags = var.tags
 }
 
@@ -304,7 +306,7 @@ resource "azurerm_network_interface" "tenpobastionnic" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.tenpobastionpublicip.id
   }
-  
+
   tags = var.tags
 }
 
@@ -315,7 +317,7 @@ resource "azurerm_virtual_machine" "tenpobastion" {
   resource_group_name   = azurerm_resource_group.tenporesourcegroup.name
   network_interface_ids = [azurerm_network_interface.tenpobastionnic.id]
   vm_size               = "Standard_B1s"
-  
+
   storage_os_disk {
     name              = "BastionOsDisk"
     caching           = "ReadWrite"
@@ -347,6 +349,14 @@ resource "azurerm_virtual_machine" "tenpobastion" {
       sudo -H -u bastion bash -c 'ansible-galaxy install geerlingguy.pip'
       sudo -H -u bastion bash -c 'ansible-galaxy install geerlingguy.postgresql'
       sudo -H -u bastion bash -c 'ansible-galaxy install geerlingguy.docker'
+      cd /home/bastion/
+      git clone https://github.com/steve-perry-o/infra-provision-test.git
+      cd infra-provision-test/provisioning/ansible/
+      sudo -H -u bastion bash -c 'ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u tenpo postgresql_server.yml -i hosts'
+      sudo -H -u bastion bash -c 'ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u tenpo docker_ubuntu.yml -i hosts'
+      sudo chown bastion:bastion config.ru
+      scp config.ru tenpo@api:/tmp/
+      sudo -H -u bastion bash -c 'ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u tenpo docker_ruby_sinatra.yml -i hosts'
       EOF
   }
 
@@ -357,6 +367,20 @@ resource "azurerm_virtual_machine" "tenpobastion" {
       key_data = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+3CPZN7hECdhxhQTXY9Tthva4uq4aa5qYUcio3axOpwTLckNSCkeq7sGxSNgn2rzEEelelcR+zWFRIpTFKojBXDgspB38+4v4nrEuuJbXlJZvIBX+wYRFe+ijbpbgMwtNT03qpJWFP34oTYxHOy5+rRyKBm6hyBIfcaNGPQy97DfcUPjvI6oWIo2KO93j9hItytpgTcMfQFHdmPbXpzZGnzxPoCSfFM3x1PlTYcyJ9oaStDhMzHV+leAQZyESf8TR93EfgSmbfcaNPeBe+yh5rcQo9/KDPBERxJXAYbcneEJPm/3i8nAymATyfwV1MylsGzi0IOIpeMGB6W5EMrqd luismancillaavila@penguin"
     }
   }
+
+  provisioner "remote-exec" {
+    # command = "cloud-init status --wait"
+    # inline = [
+    #   "/bin/bash -c \"timeout 300 sed '/finished/q' <(tail -f /var/log/cloud-init-output.log)\""
+    # ]
+  }
+
+  depends_on = [
+    azurerm_virtual_machine.tenpoapivm,
+    azurerm_virtual_machine.tenpodbvm,
+    azurerm_network_interface.tenpobastionnic,
+    azurerm_public_ip.tenpobastionpublicip
+  ]
 
   tags = var.tags
 }
