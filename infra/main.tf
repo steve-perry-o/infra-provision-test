@@ -74,8 +74,10 @@ resource "azurerm_lb_rule" "tenpolbrule" {
 resource "azurerm_lb_probe" "lb_probe" {
   resource_group_name = azurerm_resource_group.tenporesourcegroup.name
   loadbalancer_id     = azurerm_lb.tenpolb.id
-  name                = "SSHRunningProbe"
-  port                = 22
+  name                = "HTTPProbe"
+  port                = 80
+  protocol            = "Http"
+  request_path        = "/health"
 }
 
 ## API SG
@@ -355,7 +357,7 @@ resource "azurerm_virtual_machine" "tenpobastion" {
       sudo -H -u bastion bash -c 'ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u tenpo postgresql_server.yml -i hosts'
       sudo -H -u bastion bash -c 'ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u tenpo docker_ubuntu.yml -i hosts'
       sudo chown bastion:bastion config.ru
-      scp config.ru tenpo@api:/tmp/
+      sudo -H -u bastion bash -c 'scp config.ru tenpo@api:/tmp/'
       sudo -H -u bastion bash -c 'ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u tenpo docker_ruby_sinatra.yml -i hosts'
       EOF
   }
@@ -368,12 +370,12 @@ resource "azurerm_virtual_machine" "tenpobastion" {
     }
   }
 
-  provisioner "remote-exec" {
+  # provisioner "remote-exec" {
     # command = "cloud-init status --wait"
     # inline = [
     #   "/bin/bash -c \"timeout 300 sed '/finished/q' <(tail -f /var/log/cloud-init-output.log)\""
     # ]
-  }
+  # }
 
   depends_on = [
     azurerm_virtual_machine.tenpoapivm,
