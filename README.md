@@ -12,7 +12,7 @@ $ cd infra/
 $ terraform init && terraform apply
 ```
 
-* if you don't get the _public_ip_address_ for Bastion Host, then execute (see Troubleshooting):
+* if you don't get the bastion__public_ip_address_ for Bastion Host, then execute (see Troubleshooting):
 
 ```
 $ terraform refresh
@@ -24,16 +24,19 @@ Connect to Bastion Host using SSH and the private key (permissions 0600):
 $ ssh -i <bastion-private-key> bastion@<bastion-public_ip_address>
 ```
 
-As *root* user, check if _custom_data_ for Bastion Host was successfully executed.
+As *bastion* user, check if _custom_data_ for Bastion Host was successfully executed.
 
 ```
-$ sudo su
 $ tail -f  /var/log/cloud-init-output.log
 ```
 
 # Provisioning
 
 A Bastion Host is created after apply Terraform. It will install the Ansible playbooks (PostgreSQL, Docker) on API and DB servers.
+
+# Ruby Sinatra API
+
+A Ruby Sinatra script called _config.ru_ located in _provisioning/ansible/config.ru_ is mounted as a volume.
 
 # Troubleshooting
 
